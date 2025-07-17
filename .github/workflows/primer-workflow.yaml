@@ -1,0 +1,20 @@
+name: Exploración del Repositorio
+
+on: [push]
+
+jobs:
+  inspeccion:
+    runs-on: ubuntu-latest  # Usa un runner con Ubuntu
+
+    steps:
+      - name: Checkout del código # Clona el repositorio en el runner
+        uses: actions/checkout@v4
+
+      - name: Mostrar la rama actual # Muestra la rama donde se hizo push
+        run: "echo 'Rama actual: ${{ github.ref_name }}'"
+
+      - name: Listar archivos del repositorio # Lista todos los archivos y carpetas con detalles
+        run: ls -la
+
+      - name: Mostrar fecha y hora del runner # Muestra la fecha y hora del sistema del runner
+        run: date
