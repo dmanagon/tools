@@ -1,0 +1,37 @@
+name: Detectar escenarios eliminados
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  comparar-escenarios:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Obtener archivos .feature de main
+        run: |
+          git fetch origin main
+          mkdir main_features
+          for file in $(git diff --name-only origin/main HEAD -- '*.feature'); do
+            git show origin/main:$file > main_features/$(basename $file)
+          done
+
+      - name: Detectar escenarios eliminados
+        run: |
+          for file in main_features/*.feature; do
+            filename=$(basename $file)
+            if [ -f "$filename" ]; then
+              echo "Comparando escenarios en $filename"
+              escenarios_main=$(grep -E '^\\s*Scenario(| Outline):' main_features/$filename | sed 's/^\\s*Scenario.*: //')
+              escenarios_actual=$(grep -E '^\\s*Scenario(| Outline):' $filename | sed 's/^\\s*Scenario.*: //')
+              echo "$escenarios_main" > main.txt
+              echo "$escenarios_actual" > actual.txt
+              echo "Escenarios eliminados:"
+              grep -Fxv -f actual.txt main.txt || echo "Ninguno"
+            fi
+          done
