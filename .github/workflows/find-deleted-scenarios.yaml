@@ -12,26 +12,71 @@ jobs:
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Obtener archivos .feature de main
+      - name: Identificar archivos .feature modificados
+        id: modified-files
         run: |
-          git fetch origin main
-          mkdir main_features
-          for file in $(git diff --name-only origin/main HEAD -- '*.feature'); do
-            git show origin/main:$file > main_features/$(basename $file)
+          echo "::group::Archivos .feature modificados"
+          FILES=$(git diff --name-only HEAD^ HEAD -- '*.feature')
+          if [ -z "$FILES" ]; then
+            echo "No se encontraron archivos .feature modificados"
+            echo "modified_files=" >> $GITHUB_OUTPUT
+          else
+            echo "$FILES"
+            echo "modified_files=$FILES" >> $GITHUB_OUTPUT
+          fi
+          echo "::endgroup::"
+
+      - name: Obtener versiones anteriores de archivos
+        if: steps.modified-files.outputs.modified_files != ''
+        run: |
+          echo "::group::Obteniendo versiones anteriores"
+          mkdir -p main_features
+          for file in $(git diff --name-only HEAD^ HEAD -- '*.feature'); do
+            echo "Obteniendo versión anterior de: $file"
+            git show HEAD^:$file > main_features/$(basename $file) || echo "El archivo $file es nuevo"
           done
+          echo "::endgroup::"
 
       - name: Detectar escenarios eliminados
+        if: steps.modified-files.outputs.modified_files != ''
         run: |
+          echo "::group::Análisis de escenarios eliminados"
+          FOUND_CHANGES=false
+
           for file in main_features/*.feature; do
             filename=$(basename $file)
             if [ -f "$filename" ]; then
-              echo "Comparando escenarios en $filename"
-              escenarios_main=$(grep -E '^\\s*Scenario(| Outline):' main_features/$filename | sed 's/^\\s*Scenario.*: //')
-              escenarios_actual=$(grep -E '^\\s*Scenario(| Outline):' $filename | sed 's/^\\s*Scenario.*: //')
+              echo "🔍 Analizando archivo: $filename"
+
+              # Extraer escenarios con la expresión regular corregida
+              escenarios_main=$(grep -E '^\s*Scenario(| Outline):' main_features/$filename | sed 's/^\s*Scenario.*: //')
+              escenarios_actual=$(grep -E '^\s*Scenario(| Outline):' $filename | sed 's/^\s*Scenario.*: //')
+
+              echo "Escenarios anteriores: $(echo "$escenarios_main" | wc -l)"
+              echo "Escenarios actuales: $(echo "$escenarios_actual" | wc -l)"
+
+              # Guardar en archivos temporales
               echo "$escenarios_main" > main.txt
               echo "$escenarios_actual" > actual.txt
-              echo "Escenarios eliminados:"
-              grep -Fxv -f actual.txt main.txt || echo "Ninguno"
+
+              # Encontrar escenarios eliminados
+              ELIMINADOS=$(grep -Fxv -f actual.txt main.txt || echo "")
+
+              if [ -z "$ELIMINADOS" ]; then
+                echo "✅ No se eliminaron escenarios en $filename"
+              else
+                echo "❌ Escenarios eliminados en $filename:"
+                echo "$ELIMINADOS" | sed 's/^/  - /'
+                FOUND_CHANGES=true
+              fi
+              echo "-----------------------------------"
             fi
           done
+
+          if [ "$FOUND_CHANGES" = false ]; then
+            echo "✅ No se detectaron escenarios eliminados en ningún archivo"
+          fi
+          echo "::endgroup::"
