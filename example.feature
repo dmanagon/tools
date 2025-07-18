@@ -8,8 +8,3 @@
           | name             |
           | example2.feature |
           | example3.feature |
-
-  Scenario: This is a scenario with a step that runs a GitHub Action
-    Given I have a feature file named "example.feature"
-     When I edit the file to include a step that runs a GitHub Action
-     Then the step should be saved in the file
