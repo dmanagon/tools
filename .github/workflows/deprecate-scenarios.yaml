@@ -25,12 +25,12 @@ jobs:
 
       - name: Compare feature files and find removed scenarios
         run: |
-          git diff HEAD^ HEAD --name-only -- '*.feature' > changed_files.txt
+          git diff --unified=0 HEAD^ HEAD --name-only -- '*.feature' > changed_files.txt
           > removed_ids.txt
           while read -r file; do
             echo "Checking $file"
-            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' | sed 's/@jira-id\.//' >> removed_ids.txt || true
-          done
+            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' | sed 's/@jira-id\.//' >> removed_ids.txt || true
+          done < changed_files.txt
           cat removed_ids.txt
 
       - name: Annotate removed scenario IDs
