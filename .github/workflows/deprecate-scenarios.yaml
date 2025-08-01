@@ -1,0 +1,41 @@
+name: Deprecate Removed Scenarios
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  deprecate-scenarios:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Compare feature files and find removed scenarios
+        run: |
+          git diff HEAD^ HEAD --name-only -- '*.feature' > changed_files.txt
+          > removed_ids.txt
+          while read -r file; do
+            echo "Checking $file"
+            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo 'QANOV-\d+|QABP-\d+' >> removed_ids.txt || true
+          done
+          cat removed_ids.txt
+
+      - name: Annotate removed scenario IDs
+        run: |
+          if [ -s removed_ids.txt ]; then
+            ids=$(paste -sd, - < removed_ids.txt)
+            echo "::notice title=Escenarios eliminados::IDs detectados: $ids"
+          else
+            echo "No se detectaron escenarios eliminados."
+          fi
