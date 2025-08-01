@@ -9,9 +9,3 @@
           | name             |
           | example2.feature |
           | example3.feature |
-
-  @jira-id.QANOV-2
-  Scenario: This is example two
-    Given I have a feature file named "<name>"
-     When I edit the file to include another scenario
-     Then the scenario should be saved in the file
