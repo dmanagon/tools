@@ -18,19 +18,30 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Compare feature files and find removed scenarios
         run: |
+          echo "::group::Archivos cambiados"
           git diff --unified=0 HEAD^ HEAD --name-only -- '*.feature' > changed_files.txt
+          cat changed_files.txt
+          echo "::endgroup::"
+
           > removed_ids.txt
+
           while read -r file; do
-            echo "Checking $file"
-            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' | sed 's/@jira-id\.//' >> removed_ids.txt || true
+            echo "::group::Analizando archivo $file"
+            echo "Mostrando diff completo:"
+            git diff --unified=0 HEAD^ HEAD -- "$file"
+
+            echo "Buscando líneas eliminadas con etiquetas:"
+            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' > removed_lines.txt
+            cat removed_lines.txt
+
+            # Patrón mejorado que maneja espacios en blanco
+            cat removed_lines.txt | grep -Eo '[[:space:]]*@jira-id\.(QANOV|QABP)-[0-9]+' | sed 's/[[:space:]]*@jira-id\.//' >> removed_ids.txt || echo "No se encontraron etiquetas en $file"
+            echo "::endgroup::"
           done < changed_files.txt
+
+          echo "IDs encontrados:"
           cat removed_ids.txt
 
       - name: Annotate removed scenario IDs
