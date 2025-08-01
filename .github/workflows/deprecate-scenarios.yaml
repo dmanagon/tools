@@ -29,7 +29,7 @@ jobs:
           > removed_ids.txt
           while read -r file; do
             echo "Checking $file"
-            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo 'QANOV-\d+|QABP-\d+' >> removed_ids.txt || true
+            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' >> removed_ids.txt || true
           done
           cat removed_ids.txt
 
