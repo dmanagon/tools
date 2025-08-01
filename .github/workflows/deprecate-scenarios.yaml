@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Fetch the last two commits to compare changes
+          fetch-depth: 2
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,7 +29,7 @@ jobs:
           > removed_ids.txt
           while read -r file; do
             echo "Checking $file"
-            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' >> removed_ids.txt || true
+            git diff HEAD^ HEAD -- "$file" | grep '^-' | grep -Eo '@jira-id\.QANOV-\d+|@jira-id\.QABP-\d+' | sed 's/@jira-id\.//' >> removed_ids.txt || true
           done
           cat removed_ids.txt
 
