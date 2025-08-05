@@ -8,7 +8,13 @@
     Examples:
           | name     | jira-id |
           | example4 | QANOV-6 |
+          | example5 | QANOV-7 |
 
+  @jira-id.QANOV-8
+  Scenario Outline: This is another example
+    Given I have a feature file named "<name>"
+     When I edit the file to include another scenario
+     Then the scenario should be saved in the file
 
 
 
