@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  deprecate-scenarios:
+  detect-removed-scenarios:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
@@ -53,3 +53,30 @@ jobs:
           else
             echo "No removed scenarios detected."
           fi
+
+      - name: Read issues from file and output as json
+        id: get-issues
+        run: |
+          issues=$(jq -R -s -c 'split("\n"))' removed_ids.txt)
+          echo "issues=$issues" >> $GITHUB_OUTPUT
+
+    outputs:
+      issues: ${{ steps.get-issues.outputs.issues }}
+
+  transition-scenarios:
+    needs: detect-removed-scenarios
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        issue: ${{ fromJson(needs.detect-removed-scenarios.outputs.issues) }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Transition Jira scenario to Deprecated
+        uses: Telefonica/qacdonovum-github-actions/transition-jira-issue@0.3
+        env:
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+        with:
+          issue: ${{ matrix.issue }}
+          target_status: Deprecated
