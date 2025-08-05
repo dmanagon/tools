@@ -28,27 +28,28 @@ jobs:
           > removed_ids.txt
 
           while read -r file; do
-            echo "::group::Analizando archivo $file"
-            echo "Mostrando diff completo:"
+            echo "::group:: Analyze file $file"
+            echo "Showing complete diff:"
             git diff --unified=0 HEAD^ HEAD -- "$file"
 
-            echo "Buscando líneas eliminadas con etiquetas:"
+            echo "Search removed lines:"
             git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' > removed_lines.txt
             cat removed_lines.txt
 
-            # Patrón mejorado que maneja espacios en blanco
-            cat removed_lines.txt | grep -Eo '[[:space:]]*@jira-id\.(QANOV|QABP)-[0-9]+' | sed 's/[[:space:]]*@jira-id\.//' >> removed_ids.txt || echo "No se encontraron etiquetas en $file"
+            # Search for scenario tags in removed lines
+             cat removed_lines.txt | grep -Eo '(QANOV|QABP)-\d+' >> removed_ids.txt || echo "No removed scenarios detected in $file"
+
             echo "::endgroup::"
           done < changed_files.txt
 
-          echo "IDs encontrados:"
+          echo "IDs found:"
           cat removed_ids.txt
 
       - name: Annotate removed scenario IDs
         run: |
           if [ -s removed_ids.txt ]; then
             ids=$(paste -sd, - < removed_ids.txt)
-            echo "::notice title=Escenarios eliminados::IDs detectados: $ids"
+            echo "::notice title=Removed scenarios::Detected IDs: $ids"
           else
-            echo "No se detectaron escenarios eliminados."
+            echo "No removed scenarios detected."
           fi
