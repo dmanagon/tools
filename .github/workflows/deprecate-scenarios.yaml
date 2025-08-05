@@ -37,11 +37,23 @@ jobs:
             cat removed_lines.txt
 
             # Debug lines
-
             echo "DEBUG: Intentando búsqueda directa de QANOV:"
             cat removed_lines.txt | grep -F "QANOV" || echo "No se encontró QANOV"
+
+            echo "DEBUG: Después de filtrar líneas con ---:"
+            cat removed_lines.txt | grep -v '^---'
+
+            echo "DEBUG: Después de quitar el guión inicial:"
+            cat removed_lines.txt | grep -v '^---' | sed 's/^-//'
+
+            echo "DEBUG: Probando grep con expresión regular:"
+            cat removed_lines.txt | grep -v '^---' | sed 's/^-//' | grep -E '(QANOV|QABP)-[0-9]+' || echo "No matches with regex"
+
+            echo "DEBUG: Probando solo QANOV:"
+            cat removed_lines.txt | grep -v '^---' | sed 's/^-//' | grep -E 'QANOV-[0-9]+' || echo "No QANOV matches"
+
             # Search for scenario tags in removed lines
-            cat removed_lines.txt | grep -v '^---' | sed 's/^-//' | grep -Eo '(QANOV|QABP)-\d+' >> removed_ids.txt || echo "No removed scenarios detected in $file"
+            cat removed_lines.txt | grep -v '^---' | sed 's/^-//' | grep -Eo '(QANOV|QABP)-[0-9]+' >> removed_ids.txt || echo "No removed scenarios detected in $file"
 
             echo "::endgroup::"
           done < changed_files.txt
