@@ -11,9 +11,12 @@
 
 
   @jira-id.QANOV-19
-  Scenario: This is another example
+  Scenario: This is another example 2
     Given I have a feature file named "<name>"
      When I edit the file to include another scenario
      Then the scenario should be saved in the file
 
-
+  @jira-id.QANOV-20
+  Scenario: This is another example 3
+    Given I have a feature file named "<name>"
+     When I edit the file to include another scenario
