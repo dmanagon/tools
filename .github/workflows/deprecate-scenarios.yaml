@@ -36,17 +36,24 @@ jobs:
 
           > removed_ids.txt
 
+
           while read -r file; do
             echo "::group:: Analyze file $file"
             echo "Showing complete diff:"
             git diff --unified=0 HEAD^ HEAD -- "$file"
 
-            echo "Search removed lines:"
-            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' > removed_lines.txt || true
+            echo "Search removed and added lines:"
+            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-'> removed_lines.txt || true
+            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^+'> added_lines.txt || true
             cat removed_lines.txt
+            cat added_lines.txt
 
-            # Search for scenario tags in removed lines
-            cat removed_lines.txt | grep -Eo '(QANOV|QABP)-[0-9]+' >> removed_ids.txt || true
+            # Extract scenario tags from removed and added lines
+            cat removed_lines.txt | grep -Eo '(QANOV|QABP)-[0-9]+' | sort | uniq > removed_ids_tmp.txt || true
+            cat added_lines.txt | grep -Eo '(QANOV|QABP)-[0-9]+' | sort | uniq > added_ids_tmp.txt || true
+
+            # Only keep IDs that are in removed but not in added
+            comm -23 removed_ids_tmp.txt added_ids_tmp.txt >> removed_ids.txt || true
 
             echo "::endgroup::"
           done < changed_files.txt
