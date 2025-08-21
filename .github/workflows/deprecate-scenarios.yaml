@@ -11,7 +11,7 @@ on:
 jobs:
   detect-removed-scenarios:
     if: github.event.pull_request.merged == true
-    # For test
+    # For testing
     runs-on: ubuntu-latest
 
     steps:
