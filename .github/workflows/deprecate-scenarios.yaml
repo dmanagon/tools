@@ -11,7 +11,8 @@ on:
 jobs:
   detect-removed-scenarios:
     if: github.event.pull_request.merged == true
-    runs-on: [self-hosted, VM]
+    # For test
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
