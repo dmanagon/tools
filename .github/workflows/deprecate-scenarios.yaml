@@ -7,10 +7,11 @@ on:
     branches:
       - main
 
+
 jobs:
   detect-removed-scenarios:
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, VM]
 
     steps:
       - name: Checkout code
@@ -20,10 +21,17 @@ jobs:
 
       - name: Compare feature files and find removed scenarios
         run: |
-          echo "::group::Archivos cambiados"
+          echo "::group::Changed files"
           git diff --unified=0 HEAD^ HEAD --name-only -- '*.feature' > changed_files.txt
           cat changed_files.txt
           echo "::endgroup::"
+
+          # Check if no feature files were changed
+          if [ ! -s changed_files.txt ]; then
+            echo "No feature files changed."
+            echo "::notice title=No changes::No feature files were modified"
+            exit 0
+          fi
 
           > removed_ids.txt
 
@@ -33,17 +41,17 @@ jobs:
             git diff --unified=0 HEAD^ HEAD -- "$file"
 
             echo "Search removed lines:"
-            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' > removed_lines.txt
+            git diff --unified=0 HEAD^ HEAD -- "$file" | grep '^-' > removed_lines.txt || true
             cat removed_lines.txt
 
             # Search for scenario tags in removed lines
-            cat removed_lines.txt | grep -Eo '(QANOV|QABP)-[0-9]+' >> removed_ids.txt
+            cat removed_lines.txt | grep -Eo '(QANOV|QABP)-[0-9]+' >> removed_ids.txt || true
 
             echo "::endgroup::"
           done < changed_files.txt
 
           echo "IDs found:"
-          cat removed_ids.txt
+          cat removed_ids.txt || echo "No IDs found"
 
       - name: Annotate removed scenario IDs
         run: |
@@ -57,26 +65,9 @@ jobs:
       - name: Read issues from file and output as json
         id: get-issues
         run: |
-          issues=$(jq -R -s -c 'split("\n"))' removed_ids.txt)
-          echo "issues=$issues" >> $GITHUB_OUTPUT
-
-    outputs:
-      issues: ${{ steps.get-issues.outputs.issues }}
-
-  transition-scenarios:
-    needs: detect-removed-scenarios
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        issue: ${{ fromJson(needs.detect-removed-scenarios.outputs.issues) }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Transition Jira scenario to Deprecated
-        uses: Telefonica/qacdonovum-github-actions/transition-jira-issue@0.3
-        env:
-          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
-        with:
-          issue: ${{ matrix.issue }}
-          target_status: Deprecated
+          if [ -s removed_ids.txt ]; then
+            issues=$(jq -R -s -c 'split("\n")' removed_ids.txt)
+            echo "issues=$issues" >> $GITHUB_OUTPUT
+          else
+            echo "issues=[]" >> $GITHUB_OUTPUT
+          fi
