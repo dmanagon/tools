@@ -16,7 +16,4 @@
      When I edit the file to include another scenario
      Then the scenario should be saved in the file
 
-  @jira-id.QANOV-20 @try
-  Scenario: This is another example 3
-    Given I have a feature file named "<name>"
-     When I edit the file to include another scenario
+
